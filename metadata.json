@@ -1,0 +1,5 @@
+{
+  "name": "Mathesis — IGCSE & IB Maths Self-Study",
+  "description": "A self-study site for Cambridge IGCSE (0580) and IB Mathematics (Analysis & Approaches and Applications & Interpretation, SL/HL): topic lessons with key-formula panels and worked examples, graded practice questions with worked solutions, a searchable formula reference, and an optional Gemini-powered AI tutor (text + live voice).",
+  "requestFramePermissions": ["microphone"]
+}

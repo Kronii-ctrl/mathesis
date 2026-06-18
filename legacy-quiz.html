@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Quadratische Gleichungen – Quiz</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 1rem; background: #f7f7fb; color: #222; }
+  h1 { margin-bottom: 0.2rem; }
+  .sub { color: #666; margin-bottom: 1.5rem; }
+  .topics { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+  .topics button { padding: 0.5rem 0.8rem; border: 1px solid #ccc; background: white; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+  .topics button.active { background: #2d6cdf; color: white; border-color: #2d6cdf; }
+  .card { background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .question { font-size: 1.4rem; margin-bottom: 1rem; }
+  .hint { color: #888; font-size: 0.9rem; margin-bottom: 1rem; }
+  input[type=text] { font-size: 1.1rem; padding: 0.5rem; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; }
+  .actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
+  button.primary { background: #2d6cdf; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+  button.secondary { background: #eee; color: #222; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+  .feedback { margin-top: 1rem; padding: 0.8rem; border-radius: 6px; font-weight: 500; }
+  .ok { background: #e3f7e6; color: #1c6b2a; }
+  .bad { background: #fde2e2; color: #8b1a1a; }
+  .score { margin-top: 1rem; color: #666; font-size: 0.9rem; }
+  sup { font-size: 0.75em; }
+  .solution { font-family: 'Courier New', monospace; margin-top: 0.5rem; }
+  .steps { margin-top: 0.8rem; padding: 0.8rem; background: #f0f4fb; border-left: 3px solid #2d6cdf; border-radius: 4px; color: #222; font-weight: normal; }
+  .steps b { display: block; margin-bottom: 0.4rem; color: #2d6cdf; }
+  .steps ol { margin: 0; padding-left: 1.2rem; }
+  .steps li { margin-bottom: 0.3rem; font-family: 'Courier New', monospace; font-size: 0.95rem; }
+</style>
+</head>
+<body>
+
+<h1>Quadratische Gleichungen</h1>
+<div class="sub">Quiz zum Üben – Lösungen als Dezimalzahlen oder Brüche, mehrere Lösungen mit Komma getrennt (z.B. <code>-2, 3</code>)</div>
+
+<div class="topics" id="topics"></div>
+
+<div class="card">
+  <div class="question" id="question"></div>
+  <div class="hint" id="hint"></div>
+  <input type="text" id="answer" placeholder="Deine Antwort..." autocomplete="off">
+  <div class="actions">
+    <button class="primary" id="check">Prüfen</button>
+    <button class="secondary" id="next">Nächste</button>
+    <button class="secondary" id="show">Lösung zeigen</button>
+  </div>
+  <div id="feedback"></div>
+  <div class="score" id="score">Richtig: 0 / 0</div>
+</div>
+
+<script>
+const TOPICS = [
+  { id: 'axbx',    label: 'ax² + bx = 0' },
+  { id: 'vertex',  label: 'a(x−d)² + e = 0' },
+  { id: 'formel',  label: 'Lösungsformel (ax² + bx + c = 0)' },
+  { id: 'linfak',  label: 'Linearfaktor-Darstellung' },
+  { id: 'mix',     label: 'Gemischt' },
+];
+
+let currentTopic = 'axbx';
+let currentProblem = null;
+let right = 0, total = 0;
+
+function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function nonZero(min, max) { let v; do { v = randInt(min, max); } while (v === 0); return v; }
+
+function fmtCoef(c, varStr, first=false) {
+  if (c === 0) return '';
+  let s = '';
+  if (first) {
+    if (c === 1) s = varStr;
+    else if (c === -1) s = '−' + varStr;
+    else s = c + varStr;
+  } else {
+    if (c > 0) s = ' + ' + (c === 1 ? varStr : c + varStr);
+    else       s = ' − ' + (c === -1 ? varStr : (-c) + varStr);
+  }
+  return s;
+}
+function fmtConst(c, first=false) {
+  if (c === 0) return '';
+  if (first) return String(c);
+  return c > 0 ? ' + ' + c : ' − ' + (-c);
+}
+
+// --- Problem generators ---
+
+function genAxBx() {
+  const a = nonZero(-5, 5);
+  const b = nonZero(-10, 10);
+  const x1 = 0;
+  const x2 = -b / a;
+  const lhs = fmtCoef(a, 'x²', true) + fmtCoef(b, 'x');
+  const aStr = a === 1 ? '' : (a === -1 ? '−' : a);
+  const bStr = b > 0 ? ` + ${b}` : ` − ${-b}`;
+  return {
+    question: `${lhs} = 0`,
+    hint: 'Tipp: x ausklammern → x · (ax + b) = 0',
+    solutions: normSols([x1, x2]),
+    pretty: `x₁ = 0,  x₂ = ${fmtNum(x2)}`,
+    steps: [
+      `${lhs} = 0`,
+      `x ausklammern:  x · (${aStr}x${bStr}) = 0`,
+      `Satz vom Nullprodukt → ein Faktor ist 0`,
+      `Fall 1:  x₁ = 0`,
+      `Fall 2:  ${aStr || '1'}x${bStr} = 0   →   ${aStr || '1'}x = ${-b}   →   x₂ = ${fmtNum(x2)}`,
+    ],
+  };
+}
+
+function genVertex() {
+  const a = nonZero(-3, 3);
+  const d = randInt(-5, 5);
+  const k = randInt(1, 6);
+  const e = -a * k * k;
+  const dPart = d === 0 ? 'x' : (d > 0 ? `(x − ${d})` : `(x + ${-d})`);
+  const aPart = a === 1 ? '' : (a === -1 ? '−' : a);
+  const ePart = e === 0 ? '' : (e > 0 ? ' + ' + e : ' − ' + (-e));
+  const rhs = -e;
+  const rhsDivA = rhs / a;
+  return {
+    question: `${aPart}${dPart}² ${ePart} = 0`,
+    hint: 'Tipp: nach (x−d)² auflösen, dann Wurzel ziehen',
+    solutions: normSols([d + k, d - k]),
+    pretty: `x₁ = ${d + k},  x₂ = ${d - k}`,
+    steps: [
+      `${aPart}${dPart}² ${ePart} = 0`,
+      `${ePart.replace(' − ', '+ ').replace(' + ', '− ')} auf die andere Seite:  ${aPart}${dPart}² = ${rhs}`,
+      a === 1 || a === -1
+        ? `${dPart}² = ${rhsDivA}`
+        : `÷ ${a}:  ${dPart}² = ${rhsDivA}`,
+      `Wurzel ziehen:  ${dPart} = ±${k}`,
+      `x = ${d} ± ${k}   →   x₁ = ${d + k},  x₂ = ${d - k}`,
+    ],
+  };
+}
+
+function genFormel() {
+  const x1 = nonZero(-6, 6);
+  let x2 = nonZero(-6, 6);
+  while (x2 === x1) x2 = nonZero(-6, 6);
+  const a = nonZero(-2, 2);
+  const b = -a * (x1 + x2);
+  const c = a * x1 * x2;
+  let lhs = fmtCoef(a, 'x²', true) + fmtCoef(b, 'x') + fmtConst(c);
+  const D = b * b - 4 * a * c;
+  const sqrtD = Math.sqrt(D);
+  return {
+    question: `${lhs} = 0`,
+    hint: 'Tipp: Lösungsformel  x = (−b ± √(b²−4ac)) / (2a)',
+    solutions: normSols([x1, x2]),
+    pretty: `x₁ = ${Math.min(x1,x2)},  x₂ = ${Math.max(x1,x2)}`,
+    steps: [
+      `${lhs} = 0     mit  a = ${a},  b = ${b},  c = ${c}`,
+      `Diskriminante:  D = b² − 4ac = (${b})² − 4·(${a})·(${c}) = ${b*b} − ${4*a*c} = ${D}`,
+      `√D = √${D} = ${sqrtD}`,
+      `x = (−b ± √D) / (2a) = (${-b} ± ${sqrtD}) / ${2*a}`,
+      `x₁ = (${-b} + ${sqrtD}) / ${2*a} = ${(-b + sqrtD)/(2*a)}`,
+      `x₂ = (${-b} − ${sqrtD}) / ${2*a} = ${(-b - sqrtD)/(2*a)}`,
+    ],
+  };
+}
+
+function genLinfak() {
+  const x1 = nonZero(-6, 6);
+  let x2 = nonZero(-6, 6);
+  while (x2 === x1) x2 = nonZero(-6, 6);
+  const a = nonZero(-2, 2);
+  const b = -a * (x1 + x2);
+  const c = a * x1 * x2;
+  const lhs = fmtCoef(a, 'x²', true) + fmtCoef(b, 'x') + fmtConst(c);
+  const aPart = a === 1 ? '' : (a === -1 ? '−' : a);
+  const f1 = x1 === 0 ? 'x' : (x1 > 0 ? `(x − ${x1})` : `(x + ${-x1})`);
+  const f2 = x2 === 0 ? 'x' : (x2 > 0 ? `(x − ${x2})` : `(x + ${-x2})`);
+  const D = b*b - 4*a*c;
+  return {
+    question: `Schreibe f(x) = ${lhs} in Linearfaktor-Darstellung. Gib die Nullstellen ein.`,
+    hint: `Form: f(x) = a·(x − x₁)·(x − x₂). Antwort: beide Nullstellen mit Komma.`,
+    solutions: normSols([x1, x2]),
+    pretty: `f(x) = ${aPart}${f1}${f2}   →  x₁ = ${Math.min(x1,x2)}, x₂ = ${Math.max(x1,x2)}`,
+    steps: [
+      `f(x) = ${lhs}     mit  a = ${a}, b = ${b}, c = ${c}`,
+      `Nullstellen mit Lösungsformel:  D = b² − 4ac = ${D},  √D = ${Math.sqrt(D)}`,
+      `x = (−b ± √D)/(2a)   →   x₁ = ${Math.min(x1,x2)},  x₂ = ${Math.max(x1,x2)}`,
+      `Linearfaktor-Darstellung:  f(x) = a·(x − x₁)·(x − x₂)`,
+      `f(x) = ${aPart || ''}${f1}${f2}`,
+    ],
+  };
+}
+
+function newProblem() {
+  let topic = currentTopic;
+  if (topic === 'mix') {
+    const opts = ['axbx', 'vertex', 'formel', 'linfak'];
+    topic = opts[randInt(0, 3)];
+  }
+  switch (topic) {
+    case 'axbx':   return genAxBx();
+    case 'vertex': return genVertex();
+    case 'formel': return genFormel();
+    case 'linfak': return genLinfak();
+  }
+}
+
+// --- Answer checking ---
+function fmtNum(n) {
+  if (Number.isInteger(n)) return String(n);
+  return n.toFixed(2).replace(/\.?0+$/, '');
+}
+function normSols(arr) {
+  return arr.map(n => Math.round(n * 1000) / 1000).sort((a,b) => a - b);
+}
+function parseAnswer(s) {
+  if (!s) return null;
+  s = s.replace(/x[₁₂]?\s*=\s*/g, '').replace(/−/g, '-');
+  const parts = s.split(/[,;]| und | oder /).map(p => p.trim()).filter(Boolean);
+  const nums = [];
+  for (const p of parts) {
+    let val;
+    if (p.includes('/')) {
+      const [n, d] = p.split('/').map(Number);
+      if (isNaN(n) || isNaN(d) || d === 0) return null;
+      val = n / d;
+    } else {
+      val = Number(p.replace(',', '.'));
+      if (isNaN(val)) return null;
+    }
+    nums.push(Math.round(val * 1000) / 1000);
+  }
+  return nums.sort((a,b) => a - b);
+}
+function arraysEqual(a, b) {
+  if (a.length !== b.length) return false;
+  return a.every((v, i) => Math.abs(v - b[i]) < 0.01);
+}
+
+// --- UI ---
+const topicsDiv = document.getElementById('topics');
+TOPICS.forEach(t => {
+  const btn = document.createElement('button');
+  btn.textContent = t.label;
+  btn.dataset.id = t.id;
+  if (t.id === currentTopic) btn.classList.add('active');
+  btn.onclick = () => {
+    currentTopic = t.id;
+    document.querySelectorAll('.topics button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadProblem();
+  };
+  topicsDiv.appendChild(btn);
+});
+
+const qEl = document.getElementById('question');
+const hEl = document.getElementById('hint');
+const aEl = document.getElementById('answer');
+const fEl = document.getElementById('feedback');
+const sEl = document.getElementById('score');
+
+function loadProblem() {
+  currentProblem = newProblem();
+  qEl.textContent = currentProblem.question;
+  hEl.textContent = currentProblem.hint;
+  aEl.value = '';
+  fEl.innerHTML = '';
+  aEl.focus();
+}
+
+function renderSteps() {
+  if (!currentProblem || !currentProblem.steps) return '';
+  const items = currentProblem.steps.map(s => `<li>${s}</li>`).join('');
+  return `<div class="steps"><b>Lösungsweg:</b><ol>${items}</ol></div>`;
+}
+
+function check() {
+  if (!currentProblem) return;
+  const user = parseAnswer(aEl.value);
+  total++;
+  if (user && arraysEqual(user, currentProblem.solutions)) {
+    right++;
+    fEl.className = 'feedback ok';
+    fEl.innerHTML = `✓ Richtig!${renderSteps()}`;
+  } else {
+    fEl.className = 'feedback bad';
+    fEl.innerHTML = `✗ Falsch. <div class="solution">Lösung: ${currentProblem.pretty}</div>${renderSteps()}`;
+  }
+  sEl.textContent = `Richtig: ${right} / ${total}`;
+}
+
+document.getElementById('check').onclick = check;
+document.getElementById('next').onclick = loadProblem;
+document.getElementById('show').onclick = () => {
+  if (!currentProblem) return;
+  fEl.className = 'feedback bad';
+  fEl.innerHTML = `Lösung: <div class="solution">${currentProblem.pretty}</div>${renderSteps()}`;
+};
+aEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (fEl.textContent) loadProblem();
+    else check();
+  }
+});
+
+loadProblem();
+</script>
+</body>
+</html>
