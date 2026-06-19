@@ -1,4 +1,5 @@
-import type { Board, Course, IndexedFormula } from '../types';
+import type { Board, Course, Difficulty, IndexedFormula } from '../types';
+import { extraQuestions } from './extra-questions';
 
 /**
  * All curriculum content for the site lives here. To extend the site, add a new
@@ -754,6 +755,21 @@ $r^{2}$ is the proportion of variation in $y$ explained by the linear model.`,
     ],
   },
 ];
+
+/* Merge the supplementary question bank into each lesson and order every
+ * lesson's questions Easy → Medium → Hard. Both the lesson view and the
+ * Practice page read `lesson.questions`, so both pick these up. */
+const DIFFICULTY_ORDER: Record<Difficulty, number> = { Easy: 0, Medium: 1, Hard: 2 };
+for (const course of courses) {
+  for (const topic of course.topics) {
+    for (const lesson of topic.lessons) {
+      const extra = extraQuestions[lesson.id] ?? [];
+      lesson.questions = [...(lesson.questions ?? []), ...extra].sort(
+        (a, b) => DIFFICULTY_ORDER[a.difficulty] - DIFFICULTY_ORDER[b.difficulty],
+      );
+    }
+  }
+}
 
 /* ───────────────────────────── Selectors ───────────────────────────── */
 
